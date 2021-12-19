@@ -5,6 +5,8 @@ import '@material/mwc-top-app-bar';
 import '@material/mwc-button';
 import '@material/mwc-textfield';
 import {TextField} from '@material/mwc-textfield';
+import '@material/mwc-list/mwc-list';
+import '@material/mwc-list/mwc-list-item';
 
 function initClient(): Promise<unknown> {
   return gapi.client.init({
@@ -150,12 +152,31 @@ async function logActivity(calendarId: string, summary: string) {
   console.log(response);
 }
 
+function pad2(n: number) {
+  return n.toLocaleString('en-US', {
+    minimumIntegerDigits: 2,
+    useGrouping: false,
+  });
+}
+
+function isoToLocal(isoDate?: string) {
+  if (!isoDate) {
+    return 'unknown';
+  }
+  const d = new Date(isoDate);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
 @customElement('activity-form')
 export class ActivityForm extends LitElement {
   @property()
   calendarId?: string;
   @query('#activity')
   textField!: TextField;
+  @state()
+  recentEvents: Array<gapi.client.calendar.Event> = [];
 
   static override styles = css`
     main {
@@ -170,6 +191,7 @@ export class ActivityForm extends LitElement {
     super.connectedCallback();
 
     this.calendarId = await getOrCreateActivityCalendar('Activity Log');
+    this.loadRecentEvents();
   }
 
   override render() {
@@ -186,12 +208,43 @@ export class ActivityForm extends LitElement {
           @click=${this.handleSubmit}
         ></mwc-button>
       </div>
+      ${this.renderRecentEvents()}
     </main>`;
   }
 
   async handleSubmit() {
     if (this.calendarId) {
       await logActivity(this.calendarId, this.textField.value);
+    }
+  }
+
+  renderRecentEvents() {
+    return html`<mwc-list>
+      ${this.recentEvents.map(
+        (event) =>
+          html`<mwc-list-item twoline>
+            <span>${event.summary}</span>
+            <span slot="secondary">${isoToLocal(event.start?.dateTime)}</span>
+          </mwc-list-item>`
+      )}
+    </mwc-list>`;
+  }
+
+  async loadRecentEvents() {
+    if (!this.calendarId) {
+      return;
+    }
+    const timeMin = new Date();
+    timeMin.setDate(timeMin.getDate() - 28);
+    const response = await gapi.client.calendar.events.list({
+      calendarId: this.calendarId,
+      orderBy: 'startTime',
+      timeMin: timeMin.toISOString(),
+      singleEvents: true,
+    });
+    const items = response.result.items;
+    if (items) {
+      this.recentEvents = items.reverse();
     }
   }
 }
