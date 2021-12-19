@@ -10,19 +10,35 @@ import '@material/mwc-list/mwc-list-item';
 import '@material/mwc-circular-progress';
 import {SingleSelectedEvent} from '@material/mwc-list/mwc-list';
 
+const CLIENT_ID =
+  '119595275745-mlikf6ulktg85dcjommjeqf53s9ilbmm.apps.googleusercontent.com';
+const REQUIRED_SCOPES = [
+  'https://www.googleapis.com/auth/calendar.app.created',
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+];
+
 function initClient(): Promise<unknown> {
   return gapi.client.init({
     apiKey: 'AIzaSyDr0_ma9UGoiulRQbeCItpALn_Uh_2wph4',
-    clientId:
-      '119595275745-mlikf6ulktg85dcjommjeqf53s9ilbmm.apps.googleusercontent.com',
+    clientId: CLIENT_ID,
     discoveryDocs: [
       'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
     ],
-    scope: [
-      'https://www.googleapis.com/auth/calendar.app.created',
-      'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
-    ].join(' '),
+    scope: REQUIRED_SCOPES.join(' '),
   });
+}
+
+function allPermissionsAvailable(user: gapi.auth2.GoogleUser) {
+  const grantedScopes: Record<string, boolean> = {};
+  for (const scope of user.getGrantedScopes().split(' ')) {
+    grantedScopes[scope] = true;
+  }
+  for (const scope of REQUIRED_SCOPES) {
+    if (!grantedScopes[scope]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 @customElement('activity-logger')
@@ -33,14 +49,24 @@ export class ActivityLogger extends LitElement {
   signedIn = false;
   @state()
   authenticatedUser = '';
+  @state()
+  allPermissionsAvailable = false;
+
+  static override styles = css`
+    main {
+      margin: 20px;
+    }
+  `;
 
   override async connectedCallback() {
     super.connectedCallback();
 
     await new Promise((r) => gapi.load('client:auth2', r));
     await initClient();
+    const user = gapi.auth2.getAuthInstance().currentUser;
+    user.listen((user) => this.updateAuthStatus(user));
+    this.updateAuthStatus(user.get());
     this.ready = true;
-    this.updateAuthStatus();
   }
 
   override render() {
@@ -49,29 +75,28 @@ export class ActivityLogger extends LitElement {
         <div slot="title">Activity Logger</div>
         ${this.renderAuthButtons()}
       </mwc-top-app-bar>
-      ${this.renderForm()}
+      <main>${this.renderForm()}</main>
     `;
   }
 
-  updateAuthStatus() {
-    const ai = gapi.auth2.getAuthInstance();
-    this.signedIn = ai.isSignedIn.get();
-    if (this.signedIn) {
-      this.authenticatedUser = ai.currentUser
-        .get()
-        .getBasicProfile()
-        .getEmail();
+  updateAuthStatus(user: gapi.auth2.GoogleUser) {
+    if (user.isSignedIn()) {
+      this.signedIn = true;
+      this.authenticatedUser = user.getBasicProfile().getEmail();
+      this.allPermissionsAvailable = allPermissionsAvailable(user);
+    } else {
+      this.signedIn = false;
+      this.authenticatedUser = '';
+      this.allPermissionsAvailable = false;
     }
   }
 
   async handleSignIn() {
     await gapi.auth2.getAuthInstance().signIn();
-    this.updateAuthStatus();
   }
 
   async handleSignOut() {
     await gapi.auth2.getAuthInstance().signOut();
-    this.updateAuthStatus();
   }
 
   renderAuthButtons() {
@@ -96,9 +121,17 @@ export class ActivityLogger extends LitElement {
 
   renderForm() {
     if (this.signedIn) {
-      return html`<activity-form
-        authenticatedUser=${this.authenticatedUser}
-      ></activity-form>`;
+      if (this.allPermissionsAvailable) {
+        return html`<activity-form
+          authenticatedUser=${this.authenticatedUser}
+        ></activity-form>`;
+      }
+      return html`<p>Insufficient permissions.</p>
+        <mwc-button
+          outlined
+          @click=${this.handleSignIn}
+          label="Authorize"
+        ></mwc-button>`;
     }
     return undefined;
   }
@@ -186,9 +219,6 @@ export class ActivityForm extends LitElement {
   authenticatedUser = '';
 
   static override styles = css`
-    main {
-      margin: 20px;
-    }
     mwc-button {
       vertical-align: baseline;
     }
@@ -209,9 +239,9 @@ export class ActivityForm extends LitElement {
 
   override render() {
     if (!this.calendarId) {
-      return html`<main>Loading...</main>`;
+      return html`Loading...`;
     }
-    return html`<main>
+    return html`
       <p>Logged in as: ${this.authenticatedUser}</p>
       <p>Using calendar: <span class="long">${this.calendarId}</span></p>
       <div>
@@ -232,7 +262,7 @@ export class ActivityForm extends LitElement {
           : undefined}
       </div>
       ${this.renderRecentEvents()}
-    </main>`;
+    `;
   }
 
   handleTextFieldKeyUp(e: KeyboardEvent) {
