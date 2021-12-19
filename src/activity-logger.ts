@@ -8,6 +8,7 @@ import {TextField} from '@material/mwc-textfield';
 import '@material/mwc-list/mwc-list';
 import '@material/mwc-list/mwc-list-item';
 import '@material/mwc-circular-progress';
+import {SingleSelectedEvent} from '@material/mwc-list/mwc-list';
 
 function initClient(): Promise<unknown> {
   return gapi.client.init({
@@ -242,8 +243,12 @@ export class ActivityForm extends LitElement {
     }
   }
 
+  handleSelected(e: SingleSelectedEvent) {
+    this.textField.value = this.recentEvents[e.detail.index].summary || '';
+  }
+
   renderRecentEvents() {
-    return html`<mwc-list>
+    return html`<mwc-list @selected=${this.handleSelected}>
       ${this.recentEvents.map(
         (event) =>
           html`<mwc-list-item twoline>
