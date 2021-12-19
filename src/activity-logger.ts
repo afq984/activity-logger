@@ -1,8 +1,10 @@
 import {css, html, LitElement} from 'lit';
-import {customElement, state, property} from 'lit/decorators.js';
+import {customElement, state, property, query} from 'lit/decorators.js';
 
 import '@material/mwc-top-app-bar';
 import '@material/mwc-button';
+import '@material/mwc-textfield';
+import {TextField} from '@material/mwc-textfield';
 
 function initClient(): Promise<unknown> {
   return gapi.client.init({
@@ -130,14 +132,37 @@ async function getOrCreateActivityCalendar(
   );
 }
 
+async function logActivity(calendarId: string, summary: string) {
+  const now = new Date();
+  const event: gapi.client.calendar.Event = {
+    summary: summary,
+    start: {
+      dateTime: now.toISOString(),
+    },
+    end: {
+      dateTime: now.toISOString(),
+    },
+  };
+  const response = await gapi.client.calendar.events.insert({
+    calendarId,
+    resource: event,
+  });
+  console.log(response);
+}
+
 @customElement('activity-form')
 export class ActivityForm extends LitElement {
   @property()
   calendarId?: string;
+  @query('#activity')
+  textField!: TextField;
 
   static override styles = css`
     main {
       margin: 20px;
+    }
+    mwc-button {
+      vertical-align: baseline;
     }
   `;
 
@@ -151,6 +176,22 @@ export class ActivityForm extends LitElement {
     if (!this.calendarId) {
       return html`<main>Loading...</main>`;
     }
-    return html`<main><p>Using calendar: ${this.calendarId}</p></main>`;
+    return html`<main>
+      <p>Using calendar: ${this.calendarId}</p>
+      <div>
+        <mwc-textfield id="activity" label="Activity"></mwc-textfield>
+        <mwc-button
+          outlined
+          label="Submit"
+          @click=${this.handleSubmit}
+        ></mwc-button>
+      </div>
+    </main>`;
+  }
+
+  async handleSubmit() {
+    if (this.calendarId) {
+      await logActivity(this.calendarId, this.textField.value);
+    }
   }
 }
