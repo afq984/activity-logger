@@ -7,8 +7,14 @@ import minifyHTML from 'rollup-plugin-minify-html-literals';
 
 export default {
   plugins: [
-    html({input: 'index.html'}),
-    typescript({tsconfig: 'tsconfig.json', outDir: null}),
+    html({
+      input: 'index.html',
+      minify: true,
+    }),
+    typescript({
+      tsconfig: 'tsconfig.json',
+      outDir: null,
+    }),
     resolve(),
     minifyHTML(),
     terser({
@@ -20,5 +26,6 @@ export default {
   output: {
     dir: 'out/prod',
     sourcemap: true,
+    entryFileNames: '[name].[hash].js',
   },
 };
