@@ -1,0 +1,61 @@
+name: Actions
+
+on:
+  push:
+    branch: main
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 16
+    - run: npm ci
+    - run: npm run lint
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 16
+    - run: npm ci
+    - run: npm run format:check
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 16
+    - run: npm ci
+    - run: npm run build
+    - uses: actions/upload-artifact@v2
+      with:
+        name: prod
+        path: out/prod/
+
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs: [lint, format, build]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: prod
+        path: out/prod/
+    # https://github.community/t/github-action-not-triggering-gh-pages-upon-push/16096/5
+    - run: |
+        cd out/prod
+        git init -b gh-pages
+        git config user.name bot+activity-logger
+        git config user.email bot+activity-logger@afq984.org
+        git add -A
+        git commit -m 'build ${{ github.sha }}'
+        git remote add pages https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
+        git push pages gh-pages --force
