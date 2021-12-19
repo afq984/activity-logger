@@ -79,13 +79,12 @@ export class ActivityLogger extends LitElement {
       return html`<div slot="actionItems">Loading...</div>`;
     }
     if (this.signedIn) {
-      return html`<div slot="actionItems">${this.authenticatedUser}</div>
-        <mwc-button
-          unelevated
-          slot="actionItems"
-          label="Sign Out"
-          @click=${this.handleSignOut}
-        ></mwc-button>`;
+      return html`<mwc-button
+        unelevated
+        slot="actionItems"
+        label="Sign Out"
+        @click=${this.handleSignOut}
+      ></mwc-button>`;
     }
     return html`<mwc-button
       unelevated
@@ -97,7 +96,9 @@ export class ActivityLogger extends LitElement {
 
   renderForm() {
     if (this.signedIn) {
-      return html`<activity-form></activity-form>`;
+      return html`<activity-form
+        authenticatedUser=${this.authenticatedUser}
+      ></activity-form>`;
     }
     return undefined;
   }
@@ -181,6 +182,8 @@ export class ActivityForm extends LitElement {
   recentEvents: Array<gapi.client.calendar.Event> = [];
   @state()
   submitIsRunning = false;
+  @property()
+  authenticatedUser = '';
 
   static override styles = css`
     main {
@@ -191,6 +194,9 @@ export class ActivityForm extends LitElement {
     }
     mwc-circular-progress {
       vertical-align: bottom;
+    }
+    .long {
+      word-break: break-all;
     }
   `;
 
@@ -206,7 +212,8 @@ export class ActivityForm extends LitElement {
       return html`<main>Loading...</main>`;
     }
     return html`<main>
-      <p>Using calendar: ${this.calendarId}</p>
+      <p>Logged in as: ${this.authenticatedUser}</p>
+      <p>Using calendar: <span class="long">${this.calendarId}</span></p>
       <div>
         <mwc-textfield
           id="activity"
