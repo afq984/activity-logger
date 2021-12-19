@@ -14,7 +14,7 @@ function initClient(): Promise<unknown> {
   return gapi.client.init({
     apiKey: 'AIzaSyDr0_ma9UGoiulRQbeCItpALn_Uh_2wph4',
     clientId:
-      '119595275745-mu3mngo067mmrupnkel3kqr9pmabtsuu.apps.googleusercontent.com',
+      '119595275745-mlikf6ulktg85dcjommjeqf53s9ilbmm.apps.googleusercontent.com',
     discoveryDocs: [
       'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
     ],
