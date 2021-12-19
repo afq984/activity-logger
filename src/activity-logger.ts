@@ -7,6 +7,7 @@ import '@material/mwc-textfield';
 import {TextField} from '@material/mwc-textfield';
 import '@material/mwc-list/mwc-list';
 import '@material/mwc-list/mwc-list-item';
+import '@material/mwc-circular-progress';
 
 function initClient(): Promise<unknown> {
   return gapi.client.init({
@@ -177,6 +178,8 @@ export class ActivityForm extends LitElement {
   textField!: TextField;
   @state()
   recentEvents: Array<gapi.client.calendar.Event> = [];
+  @state()
+  submitIsRunning = false;
 
   static override styles = css`
     main {
@@ -184,6 +187,9 @@ export class ActivityForm extends LitElement {
     }
     mwc-button {
       vertical-align: baseline;
+    }
+    mwc-circular-progress {
+      vertical-align: bottom;
     }
   `;
 
@@ -201,20 +207,38 @@ export class ActivityForm extends LitElement {
     return html`<main>
       <p>Using calendar: ${this.calendarId}</p>
       <div>
-        <mwc-textfield id="activity" label="Activity"></mwc-textfield>
+        <mwc-textfield
+          id="activity"
+          label="Activity"
+          ?disabled=${this.submitIsRunning}
+          @keyup=${this.handleTextFieldKeyUp}
+        ></mwc-textfield>
         <mwc-button
           outlined
           label="Submit"
+          ?disabled=${this.submitIsRunning}
           @click=${this.handleSubmit}
         ></mwc-button>
+        ${this.submitIsRunning
+          ? html`<mwc-circular-progress indeterminate></mwc-circular-progress>`
+          : undefined}
       </div>
       ${this.renderRecentEvents()}
     </main>`;
   }
 
+  handleTextFieldKeyUp(e: KeyboardEvent) {
+    if (e.code == 'Enter') {
+      this.handleSubmit();
+    }
+  }
+
   async handleSubmit() {
     if (this.calendarId) {
+      this.submitIsRunning = true;
       await logActivity(this.calendarId, this.textField.value);
+      await this.loadRecentEvents();
+      this.submitIsRunning = false;
     }
   }
 
@@ -245,6 +269,7 @@ export class ActivityForm extends LitElement {
     const items = response.result.items;
     if (items) {
       this.recentEvents = items.reverse();
+      this.requestUpdate();
     }
   }
 }
