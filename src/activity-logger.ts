@@ -1,5 +1,5 @@
-import {html, LitElement} from 'lit';
-import {customElement, state} from 'lit/decorators.js';
+import {css, html, LitElement} from 'lit';
+import {customElement, state, property} from 'lit/decorators.js';
 
 import '@material/mwc-top-app-bar';
 import '@material/mwc-button';
@@ -38,10 +38,13 @@ export class ActivityLogger extends LitElement {
   }
 
   override render() {
-    return html`<mwc-top-app-bar>
-      <div slot="title">Activity Logger</div>
-      ${this.renderAuthButtons()}
-    </mwc-top-app-bar>`;
+    return html`
+      <mwc-top-app-bar>
+        <div slot="title">Activity Logger</div>
+        ${this.renderAuthButtons()}
+      </mwc-top-app-bar>
+      ${this.renderForm()}
+    `;
   }
 
   updateAuthStatus() {
@@ -84,5 +87,70 @@ export class ActivityLogger extends LitElement {
       label="Sign In"
       @click=${this.handleSignIn}
     ></mwc-button>`;
+  }
+
+  renderForm() {
+    if (this.signedIn) {
+      return html`<activity-form></activity-form>`;
+    }
+    return undefined;
+  }
+}
+
+async function getActivityCalendar(
+  calendarSummary: string
+): Promise<string | null> {
+  const response = await gapi.client.calendar.calendarList.list();
+  for (const item of response.result.items || []) {
+    if (calendarSummary === item.summary && item.id) {
+      return item.id;
+    }
+  }
+  return null;
+}
+
+async function createActivityCalendar(
+  calendarSummary: string
+): Promise<string> {
+  const calendar: gapi.client.calendar.Calendar = {
+    summary: calendarSummary,
+  };
+  const response = await gapi.client.calendar.calendars.insert({
+    resource: calendar,
+  });
+  return response.result.id!;
+}
+
+async function getOrCreateActivityCalendar(
+  calendarSummary: string
+): Promise<string> {
+  return (
+    (await getActivityCalendar(calendarSummary)) ||
+    (await createActivityCalendar(calendarSummary))
+  );
+}
+
+@customElement('activity-form')
+export class ActivityForm extends LitElement {
+  @property()
+  calendarId?: string;
+
+  static override styles = css`
+    main {
+      margin: 20px;
+    }
+  `;
+
+  override async connectedCallback() {
+    super.connectedCallback();
+
+    this.calendarId = await getOrCreateActivityCalendar('Activity Log');
+  }
+
+  override render() {
+    if (!this.calendarId) {
+      return html`<main>Loading...</main>`;
+    }
+    return html`<main><p>Using calendar: ${this.calendarId}</p></main>`;
   }
 }
