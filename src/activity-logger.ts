@@ -300,7 +300,7 @@ export class ActivityForm extends LitElement {
   }
 
   handleSelected(e: SingleSelectedEvent) {
-    this.textField.value = this.recentEvents[e.detail.index].summary || '';
+    this.textField.value = this.eventsToDisplay()[e.detail.index].summary || '';
   }
 
   handleTabBarActivated(e: CustomEvent) {
