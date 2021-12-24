@@ -9,6 +9,8 @@ import '@material/mwc-list/mwc-list';
 import '@material/mwc-list/mwc-list-item';
 import '@material/mwc-circular-progress';
 import {SingleSelectedEvent} from '@material/mwc-list/mwc-list';
+import '@material/mwc-tab-bar';
+import '@material/mwc-tab';
 
 const CLIENT_ID =
   '119595275745-mlikf6ulktg85dcjommjeqf53s9ilbmm.apps.googleusercontent.com';
@@ -218,6 +220,10 @@ export class ActivityForm extends LitElement {
   @property()
   authenticatedUser = '';
 
+  static displayModes = ['All', 'Unique'];
+  @state()
+  activeDisplayMode = 'All';
+
   static override styles = css`
     mwc-button {
       vertical-align: baseline;
@@ -227,6 +233,12 @@ export class ActivityForm extends LitElement {
     }
     .long {
       word-break: break-all;
+    }
+    mwc-tab-bar {
+      margin-top: 10px;
+    }
+    h3 {
+      font-weight: 400;
     }
   `;
 
@@ -261,6 +273,13 @@ export class ActivityForm extends LitElement {
           ? html`<mwc-circular-progress indeterminate></mwc-circular-progress>`
           : undefined}
       </div>
+
+      <h3>Recent Events</h3>
+      <mwc-tab-bar @MDCTabBar:activated=${this.handleTabBarActivated}>
+        ${ActivityForm.displayModes.map(
+          (mode) => html`<mwc-tab label=${mode}></mwc-tab>`
+        )}
+      </mwc-tab-bar>
       ${this.renderRecentEvents()}
     `;
   }
@@ -284,9 +303,27 @@ export class ActivityForm extends LitElement {
     this.textField.value = this.recentEvents[e.detail.index].summary || '';
   }
 
+  handleTabBarActivated(e: CustomEvent) {
+    this.activeDisplayMode = ActivityForm.displayModes[e.detail.index];
+  }
+
+  eventsToDisplay() {
+    if (this.activeDisplayMode === 'Unique') {
+      const seen: Record<string, boolean> = {};
+      return this.recentEvents.filter((e) => {
+        if (!e.summary || seen[e.summary]) {
+          return false;
+        }
+        seen[e.summary] = true;
+        return true;
+      });
+    }
+    return this.recentEvents;
+  }
+
   renderRecentEvents() {
     return html`<mwc-list @selected=${this.handleSelected}>
-      ${this.recentEvents.map(
+      ${this.eventsToDisplay().map(
         (event) =>
           html`<mwc-list-item twoline>
             <span>${event.summary}</span>

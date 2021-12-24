@@ -7,6 +7,8 @@
     "format:check": "prettier \"**/*.{cjs,html,js,json,md,ts}\" --ignore-path ./.eslintignore --check"
   },
   "devDependencies": {
+    "@material/mwc-tab": "^0.25.3",
+    "@material/mwc-tab-bar": "^0.25.3",
     "@rollup/plugin-node-resolve": "^13.1.1",
     "@rollup/plugin-typescript": "^8.3.0",
     "@types/gapi": "^0.0.41",
@@ -18,7 +20,9 @@
     "@web/rollup-plugin-html": "^1.10.1",
     "concurrently": "^6.5.1",
     "eslint": "^8.5.0",
+    "install": "^0.13.0",
     "lit-analyzer": "^1.2.1",
+    "npm": "^8.3.0",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
     "rollup": "^2.61.1",
