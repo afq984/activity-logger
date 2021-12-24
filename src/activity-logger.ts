@@ -266,7 +266,7 @@ export class ActivityForm extends LitElement {
   }
 
   handleTextFieldKeyUp(e: KeyboardEvent) {
-    if (e.code == 'Enter') {
+    if (e.key === 'Enter') {
       this.handleSubmit();
     }
   }
