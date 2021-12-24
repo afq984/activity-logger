@@ -240,6 +240,9 @@ export class ActivityForm extends LitElement {
     h3 {
       font-weight: 400;
     }
+    mwc-button {
+      margin-left: 4px;
+    }
   `;
 
   override async connectedCallback() {
