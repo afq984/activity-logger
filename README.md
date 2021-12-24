@@ -1,5 +1,7 @@
 # Activity Logger
 
+Log activities to calendar as zero duration events
+
 ## Development
 
 ### Start dev server
